@@ -17,7 +17,13 @@ On a Xenomai-patched Raspberry Pi, the Mailbox interface to VideoCore can be pro
 - Memory use is more efficient when the frequencies you choose are close multiples of each other. For example, pairing 1 Hz with 5 Hz or 500 Hz with 1 kHz uses less buffer than pairing 1 Hz with 1 kHz.  
 - When all frequencies are identical, memory usage is the most efficient and jitter is minimized. Using different frequencies may introduce up to ~1 µs of jitter.
 
-## Build and Run Example
-```bash
-make
-sudo ./example
+## Build and Run the Example
+1. Build the example:
+   ```bash
+   make
+   ```
+
+2. Run the example:
+   ```bash
+   sudo ./example
+   ```
