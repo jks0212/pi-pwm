@@ -37,7 +37,7 @@ volatile uint32_t *pwm_reg;
 volatile uint32_t *gpio_reg;
 volatile uint32_t *clock_reg;
 // Waveform
-bool buffer_front = false;
+BufferIdx buffer_idx = BUF_0;
 bool waveform_started = false;
 int waveform_period = 0;
 int curr_cb_num = 0;
@@ -342,24 +342,18 @@ void stop_pwm(void){
 
 // Waveform
 
-void *get_gpio_buff_front(void){
-    return get_dmabuf();
+void *get_gpio_buff(BufferIdx buf_i){
+    int offset = (sizeof(uint32_t) * (CB_MAX * 2)) * buf_i;
+    return get_dmabuf() + offset;
 }
 
-void *get_gpio_buff_rear(void){
-    return get_gpio_buff_front() + (sizeof(uint32_t) * (CB_MAX * 2));
-}
-
-void *get_dma_cb_buff_front(void){
-    return get_gpio_buff_rear() + (sizeof(uint32_t) * (CB_MAX * 2));
-}
-
-void *get_dma_cb_buff_rear(void){
-    return get_dma_cb_buff_front() + (sizeof(DMA_CB) * (CB_MAX + 1));
+void *get_dma_cb_buff(BufferIdx buf_i){
+    int offset = (sizeof(DMA_CB) * (CB_MAX + 1)) * buf_i;
+    return get_gpio_buff(BUF_2 + 1) + offset;
 }
 
 void *get_dummy_buff(void){
-    return get_dma_cb_buff_rear() + (sizeof(DMA_CB) * (CB_MAX + 1));
+    return get_dma_cb_buff(BUF_2 + 1);
 }
 
 int gcd(int a, int b) {
@@ -666,18 +660,29 @@ int update_asynced_waveform(void){
 
     sort_events(events, event_count);
 
-    if(!buffer_front){
-        dma_cbs = get_dma_cb_buff_front();
-        gpios = get_gpio_buff_front();
-        prev_dma_cbs = get_dma_cb_buff_rear();
+    switch(buffer_idx){
+        case BUF_0:
+            dma_cbs = get_dma_cb_buff(BUF_0);
+            gpios = get_gpio_buff(BUF_0);
+            prev_dma_cbs = get_dma_cb_buff(BUF_1);
+            buffer_idx = BUF_1;
+            break;
 
-    } else{
-        dma_cbs = get_dma_cb_buff_rear();
-        gpios = get_gpio_buff_rear();
-        prev_dma_cbs = get_dma_cb_buff_front();
+        case BUF_1:
+            dma_cbs = get_dma_cb_buff(BUF_1);
+            gpios = get_gpio_buff(BUF_1);
+            prev_dma_cbs = get_dma_cb_buff(BUF_2);
+            buffer_idx = BUF_2;
+            break;
+
+        case BUF_2:
+            dma_cbs = get_dma_cb_buff(BUF_2);
+            gpios = get_gpio_buff(BUF_2);
+            prev_dma_cbs = get_dma_cb_buff(BUF_0);
+            buffer_idx = BUF_0;
+            break;
     }
 
-    buffer_front = !buffer_front;
 
     uint32_t merged_set_gpio = 0;
     uint32_t merged_clr_gpio = 0;
@@ -851,18 +856,28 @@ int update_synced_waveform(int freq){
 
     sort_events(events, event_count);
 
-    if(!buffer_front){
-        dma_cbs = get_dma_cb_buff_front();
-        gpios = get_gpio_buff_front();
-        prev_dma_cbs = get_dma_cb_buff_rear();
+    switch(buffer_idx){
+        case BUF_0:
+            dma_cbs = get_dma_cb_buff(BUF_0);
+            gpios = get_gpio_buff(BUF_0);
+            prev_dma_cbs = get_dma_cb_buff(BUF_1);
+            buffer_idx = BUF_1;
+            break;
 
-    } else{
-        dma_cbs = get_dma_cb_buff_rear();
-        gpios = get_gpio_buff_rear();
-        prev_dma_cbs = get_dma_cb_buff_front();
+        case BUF_1:
+            dma_cbs = get_dma_cb_buff(BUF_1);
+            gpios = get_gpio_buff(BUF_1);
+            prev_dma_cbs = get_dma_cb_buff(BUF_2);
+            buffer_idx = BUF_2;
+            break;
+
+        case BUF_2:
+            dma_cbs = get_dma_cb_buff(BUF_2);
+            gpios = get_gpio_buff(BUF_2);
+            prev_dma_cbs = get_dma_cb_buff(BUF_0);
+            buffer_idx = BUF_0;
+            break;
     }
-
-    buffer_front = !buffer_front;
 
     DMA_CB *curr_last_cb;
     DMA_CB *all_set_cb = dma_cbs;
@@ -992,8 +1007,9 @@ void sort_events(WaveformEvent events[], int n) {
 
 void print_dma_buff(int len){
     printf("\nDMA CB Buffer\n");
-    
-    DMA_CB *dma_cb_ptr = !buffer_front ? get_dma_cb_buff_rear() : get_dma_cb_buff_front();
+        
+    DMA_CB *dma_cb_ptr = get_dma_cb_buff(buffer_idx);
+
     for(int i=0; i<len; i++){
         DMA_CB *dma_cb = dma_cb_ptr + i;
         printf("CB[%d] ti 0x%x, src 0x%x, dst 0x%x, txlen 0x%x, stride 0x%x, nxtcb 0x%x\n",

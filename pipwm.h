@@ -80,7 +80,7 @@
 #define DMA_BUF_SIZE PAGE_SIZE * 256 // 1MB
 
 #define WAVE_NUM MAX_GPIO_NUM
-#define CB_MAX 10000
+#define CB_MAX 6000
 
 #define DMA_CHAN        5
 #define DMA_CHAN_OFFSET 0x100
@@ -175,6 +175,12 @@ typedef enum {
     RP_PI_ZERO_2_W
 } PiVersion;
 
+typedef enum {
+    BUF_0,
+    BUF_1,
+    BUF_2
+} BufferIdx;
+
 typedef struct {
     uint32_t ti;
     uint32_t srce_ad;
@@ -239,10 +245,8 @@ void init_pwm(void);
 void start_pwm(void);
 void stop_pwm(void);
 
-void *get_gpio_buff_front(void);
-void *get_gpio_buff_rear(void);
-void *get_dma_cb_buff_front(void);
-void *get_dma_cb_buff_rear(void);
+void *get_gpio_buff(BufferIdx buf_i);
+void *get_dma_cb_buff(BufferIdx buf_i);
 void *get_dummy_buff(void);
 int gcd(int a, int b);
 int lcm(int a, int b);
