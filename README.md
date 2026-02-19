@@ -5,7 +5,6 @@ On a Xenomai-patched Raspberry Pi, the Mailbox interface to VideoCore can be pro
 
 ## Features
 - **1 µs resolution**  
-- **32-bit support** (64-bit not yet supported)  
 - **Up to 1 MHz frequency**  
 
 ## Dependency
